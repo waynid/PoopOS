@@ -1,18 +1,52 @@
-[org 0x7c00]             ; MEMORY LOCATION
+    [org 0x7c00]             ; MEMORYLOCATION
 
-mov ah, 0x0e             ; TEXT MODE
-mov si, message          ; LOAD MESSAGE
+; --- INITIALIZATION ---
+mov ah, 0x0e             ; TELETYPEMODE
+mov si, ASCIIART         ; LOADASCIIART
 
-main:
-lodsb                    ; READ CHARACTER
-cmp al, 0                ; END?
-je .fin                  ; IF YES, FINISH
-int 0x10                 ; PRINT CHARACTER
-jmp main                 ; LOOP
+; --- ASCIIARTDISPLAY ---
+MAINEMOJI:
+lodsb                    ; LOADCHARACTER
+cmp al, 0                ; ENDSTRING?
+je MAINTEXT              ; GOTOSHOWTITLE
+int 0x10                 ; PRINTCHARACTER
+jmp MAINEMOJI            ; CONTINUELOOP
 
-.fin:
-hlt                      ; STOP
+; --- TITLEDISPLAY ---
+MAINTEXT:
+mov si, TITLE            ; LOADTITLE
+TEXTLOOP:
+lodsb                    ; LOADCHARACTER
+cmp al, 0                ; ENDSTRING?
+je ANIMATIONSTART        ; GOTOANIMATION
+int 0x10                 ; PRINTCHARACTER
+jmp TEXTLOOP             ; CONTINUELOOP
 
-message db 'Poop', 0     ; TEXT "Poop"
-times 510-($-$$) db 0    ; PADDING
-dw 0xaa55                ; BOOT SIGNATURE
+; --- LOADINGANIMATION ---
+ANIMATIONSTART:
+mov cx, 0xffff           ; INFINITECOUNTER
+LOADLOOP:
+mov si, LOADINGFRAMES    ; LOADFRAMES
+mov bx, 0                ; RESETINDEX
+FRAMELOOP:
+mov al, [si + bx]        ; LOADFRAME
+cmp al, 0                ; ENDARRAY?
+je NEXTFRAME             ; RESETFRAME
+int 0x10                 ; PRINTFRAME
+mov al, 0x08             ; BACKSPACE
+int 0x10                 ; ERASEFRAME
+inc bx                   ; NEXTFRAME
+jmp FRAMELOOP            ; CONTINUELOOP
+
+NEXTFRAME:
+loop LOADLOOP            ; INFINITELOOP
+
+; --- ENDPROGRAM ---
+hlt                      ; HALTEXECUTION
+
+; --- DATADEFINITIONS ---
+ASCIIART db '💩  ', 0     ; SIMULATEDART
+TITLE db 'PoopOS', 0      ; OPERATINGSYSTEMTITLE
+LOADINGFRAMES db '|', '/', '-', '\\', 0 ; LOADINGANIMATIONFRAMES
+times 510-($-$$) db 0     ; PADDINGBYTES
+dw 0xaa55                ; BOOTSIGNATURE
